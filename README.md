@@ -1,4 +1,13 @@
 # AI-Fatmos
+![WhatsApp Image 2025-08-15 at 02 03 40_f22e36f8](https://github.com/user-attachments/assets/d50de785-071f-422e-8c48-5109c54e15c2)
+![WhatsApp Image 2025-08-15 at 02 04 06_636f2d93](https://github.com/user-attachments/assets/93324d57-94cf-404e-a0af-636b07327bb2)
+![WhatsApp Image 2025-08-15 at 02 04 25_131b59f4](https://github.com/user-attachments/assets/a4e49034-898a-4ac2-bc16-84d67ca9af73)
+![WhatsApp Image 2025-08-15 at 17 09 16_197cbf5a](https://github.com/user-attachments/assets/b2584ca4-f147-4dd4-a719-e56d8c34e9e2)
+![WhatsApp Image 2025-08-15 at 17 09 16_00216d00](https://github.com/user-attachments/assets/f8df74b6-b0d4-4788-b041-cd9f856de2bf)
+![WhatsApp Image 2025-08-15 at 17 09 17_a36846bc](https://github.com/user-attachments/assets/b9f37c3f-1562-494e-b8c3-79b7bfc9e191)
+![WhatsApp Image 2025-08-15 at 17 09 17_08b53130](https://github.com/user-attachments/assets/14161de5-004c-4c20-ae17-89a0c2309686)
+### Download to see another page!
+<br>
 
 ## Tech Stack
 
