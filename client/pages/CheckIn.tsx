@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,25 +15,46 @@ import {
   Camera,
   FileText,
   Shield,
-  AlertTriangle
+  AlertTriangle,
+  Loader2
 } from 'lucide-react';
+
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function CheckIn() {
   const navigate = useNavigate();
   const [step, setStep] = useState<'consent' | 'preparation' | 'measurement'>('consent');
   const [consentAccepted, setConsentAccepted] = useState(false);
-  const [preparationTime, setPreparationTime] = useState(300); // 5 minutes in seconds
+  const [preparationTime, setPreparationTime] = useState(300);
   const [isPreparationActive, setIsPreparationActive] = useState(false);
+  const timerRef = useRef<number | null>(null);
+
+  // Measurement form state
+  const [sbp, setSbp] = useState<string>("");
+  const [dbp, setDbp] = useState<string>("");
+  const [bpm, setBpm] = useState<string>("");
+  const [temp, setTemp] = useState<string>("");
+  const [faceLabel, setFaceLabel] = useState<string>("Neutral");
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleConsentAccept = () => {
     if (consentAccepted) {
       setStep('preparation');
       setIsPreparationActive(true);
-      // Start countdown timer
-      const timer = setInterval(() => {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      timerRef.current = window.setInterval(() => {
         setPreparationTime(prev => {
           if (prev <= 1) {
-            clearInterval(timer);
+            if (timerRef.current) {
+              clearInterval(timerRef.current);
+              timerRef.current = null;
+            }
             setStep('measurement');
             return 0;
           }
@@ -45,6 +66,59 @@ export default function CheckIn() {
 
   const handleConsentReject = () => {
     navigate('/', { replace: true });
+  };
+
+  const skipPreparation = () => {
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+      timerRef.current = null;
+    }
+    setIsPreparationActive(false);
+    setStep('measurement');
+  };
+
+  const isMeasurementValid = () => {
+    const n = (v: string) => Number(v);
+    const isNum = (v: string) => v !== '' && !isNaN(n(v));
+    if (!isNum(sbp) || !isNum(dbp) || !isNum(bpm) || !isNum(temp) || !faceLabel) return false;
+    const sbpN = n(sbp), dbpN = n(dbp), bpmN = n(bpm), tempN = n(temp);
+    if (sbpN <= 0 || dbpN <= 0 || bpmN <= 0) return false;
+    if (tempN < 30 || tempN > 45) return false;
+    return true;
+  };
+
+  const submitCheckIn = async () => {
+    try {
+      setSubmitting(true);
+      setError(null);
+      const payload = {
+        session_id: `sess-checkin-${new Date().toISOString().split('T')[0]}-user123`,
+        timestamp: new Date().toISOString(),
+        biometrics: {
+          sbp: Number(sbp),
+          dbp: Number(dbp),
+          bpm: Number(bpm),
+          temp: Number(temp),
+          face_label: faceLabel
+        }
+      };
+      const res = await fetch('/api/v1/checkin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (!res.ok) {
+        const t = await res.text();
+        throw new Error(t || `HTTP ${res.status}`);
+      }
+      await res.json();
+      navigate('/questionnaire');
+    } catch (e: any) {
+      console.error(e);
+      setError('Gagal menyimpan data. Coba lagi.');
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const formatTime = (seconds: number) => {
@@ -273,10 +347,13 @@ export default function CheckIn() {
                   </div>
                 </div>
 
-                <div className="text-center">
-                  <p className="text-muted-foreground">
+                <div className="flex flex-col items-center gap-3">
+                  <p className="text-muted-foreground text-center">
                     Sistem akan otomatis melanjutkan ke tahap pengukuran setelah waktu persiapan selesai
                   </p>
+                  <Button onClick={skipPreparation} className="bg-medical-blue hover:bg-medical-blue/90">
+                    Lanjutkan (Lewati Waktu)
+                  </Button>
                 </div>
               </CardContent>
             </Card>
@@ -319,22 +396,57 @@ export default function CheckIn() {
               <div className="mx-auto bg-medical-blue text-white p-3 rounded-full w-fit mb-3">
                 <Activity className="h-8 w-8" />
               </div>
-              <CardTitle className="text-xl">Pengukuran Data Biometrik</CardTitle>
+              <CardTitle className="text-xl">Pengukuran & Input Data</CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <Alert>
-                <Activity className="h-4 w-4" />
-                <AlertDescription>
-                  Sistem sedang melakukan pengukuran otomatis. Tetap tenang dan ikuti instruksi pada layar.
-                </AlertDescription>
-              </Alert>
+              <div className="grid gap-4">
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="sbp">Tekanan Darah Sistolik (SBP)</Label>
+                    <Input id="sbp" type="number" inputMode="numeric" placeholder="120" value={sbp} onChange={(e) => setSbp(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="dbp">Tekanan Darah Diastolik (DBP)</Label>
+                    <Input id="dbp" type="number" inputMode="numeric" placeholder="80" value={dbp} onChange={(e) => setDbp(e.target.value)} />
+                  </div>
+                </div>
+                <div className="grid sm:grid-cols-2 gap-4">
+                  <div>
+                    <Label htmlFor="bpm">Denyut Nadi (BPM)</Label>
+                    <Input id="bpm" type="number" inputMode="numeric" placeholder="72" value={bpm} onChange={(e) => setBpm(e.target.value)} />
+                  </div>
+                  <div>
+                    <Label htmlFor="temp">Suhu Tubuh (°C)</Label>
+                    <Input id="temp" type="number" step="0.1" inputMode="decimal" placeholder="36.8" value={temp} onChange={(e) => setTemp(e.target.value)} />
+                  </div>
+                </div>
+                <div>
+                  <Label>Ekspresi Wajah</Label>
+                  <Select value={faceLabel} onValueChange={(v) => setFaceLabel(v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Pilih label ekspresi" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Neutral">Neutral</SelectItem>
+                      <SelectItem value="Mild Fatigue">Mild Fatigue</SelectItem>
+                      <SelectItem value="Moderate Fatigue">Moderate Fatigue</SelectItem>
+                      <SelectItem value="Severe Fatigue">Severe Fatigue</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
 
-              <div className="text-center">
-                <Link to="/questionnaire">
-                  <Button size="lg" className="bg-medical-blue hover:bg-medical-blue/90">
-                    Lanjut ke Kuesioner
-                  </Button>
+              {error && (
+                <div className="text-sm text-red-600">{error}</div>
+              )}
+
+              <div className="flex justify-between gap-3">
+                <Link to="/">
+                  <Button variant="outline">Batal</Button>
                 </Link>
+                <Button size="lg" disabled={!isMeasurementValid() || submitting} onClick={submitCheckIn} className="bg-medical-blue hover:bg-medical-blue/90">
+                  {submitting && <Loader2 className="h-4 w-4 mr-2 animate-spin" />} Simpan & Lanjut ke Kuesioner
+                </Button>
               </div>
             </CardContent>
           </Card>

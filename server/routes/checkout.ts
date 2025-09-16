@@ -1,5 +1,7 @@
 import { RequestHandler } from "express";
 
+import { getLatestCheckIn } from "./checkinData";
+
 interface CheckOutRequest {
   session_id: string;
   checkin_session_id?: string;
@@ -49,7 +51,8 @@ interface CheckOutResponse {
 
 // Mock check-in data - in real app this would be fetched from database
 const getCheckInData = (checkinSessionId?: string) => {
-  // Mock data representing the check-in from earlier today
+  const latest = getLatestCheckIn();
+  if (latest) return latest as any;
   return {
     session_id: checkinSessionId || 'sess-checkin-2025-01-15-user123',
     total_score: 6,
@@ -314,9 +317,9 @@ export const handleGetCheckInData: RequestHandler = (req, res) => {
   try {
     const { user_id, date } = req.query as Record<string, string>;
     
-    // In real app, query database for check-in data
-    const checkInData = getCheckInData();
-    
+    const latest = getLatestCheckIn();
+    const checkInData = latest || getCheckInData();
+
     res.json({
       status: "success",
       checkin_data: checkInData

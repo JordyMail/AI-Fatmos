@@ -43,7 +43,7 @@ interface CheckInData {
   total_score: number;
   classification: string;
   biometrics: BiometricData;
-  components: {
+  scores?: {
     fas: number;
     psqi: number;
     pa: number;
@@ -98,29 +98,16 @@ export default function CheckOut() {
   }, []);
 
   const loadCheckInData = async () => {
-    // Mock check-in data - in real app would fetch from API
-    const mockCheckInData: CheckInData = {
-      session_id: 'sess-checkin-2025-01-15-user123',
-      total_score: 6,
-      classification: 'Mild Fatigue',
-      biometrics: {
-        sbp: 120,
-        dbp: 80,
-        bpm: 72,
-        temp: 36.8,
-        face_label: 'Neutral'
-      },
-      components: {
-        fas: 1,
-        psqi: 2,
-        pa: 0,
-        bp: 1,
-        hr: 1,
-        temp: 0,
-        face: 1
+    try {
+      const res = await fetch('/api/v1/checkin-data');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      if (data && data.checkin_data) {
+        setCheckInData(data.checkin_data);
       }
-    };
-    setCheckInData(mockCheckInData);
+    } catch (e) {
+      console.error('Failed to load check-in data', e);
+    }
   };
 
   const getStepNumber = () => {

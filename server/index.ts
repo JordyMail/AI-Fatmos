@@ -5,6 +5,7 @@ import { handleDemo } from "./routes/demo";
 import { handleQuestionnaireSubmit, handleQuestionnaireGet } from "./routes/questionnaire";
 import { handleHistoryGet, handleReportsGet, handleExportData, handleSessionDetail } from "./routes/reports";
 import { handleCheckOut, handleGetCheckInData } from "./routes/checkout";
+import { handleCheckInSubmit } from "./routes/checkin";
 
 export function createServer() {
   const app = express();
@@ -32,7 +33,8 @@ export function createServer() {
   app.get("/api/v1/export", handleExportData);
   app.get("/api/v1/sessions/:session_id", handleSessionDetail);
 
-  // AI-FatMoS Check-out API
+  // AI-FatMoS Check-in & Check-out API
+  app.post("/api/v1/checkin", handleCheckInSubmit);
   app.post("/api/v1/checkout", handleCheckOut);
   app.get("/api/v1/checkin-data", handleGetCheckInData);
 

@@ -1,4 +1,5 @@
 import DashboardLayout from '@/components/DashboardLayout';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -27,6 +28,22 @@ export default function Dashboard() {
     },
     classification: 'mild'
   };
+
+  const [latestCheckIn, setLatestCheckIn] = useState<null | { biometrics: { sbp: number; dbp: number; bpm: number; temp: number; face_label: string }; total_score?: number; classification?: string }>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch('/api/v1/checkin-data');
+        if (res.ok) {
+          const data = await res.json();
+          if (data && data.checkin_data) setLatestCheckIn(data.checkin_data);
+        }
+      } catch (e) {
+        console.error('Failed to load latest check-in', e);
+      }
+    })();
+  }, []);
 
   const weeklyTrend = [
     { day: 'Sen', score: 5 },
@@ -183,11 +200,11 @@ export default function Dashboard() {
             <CardContent className="space-y-2">
               <div className="flex justify-between text-sm">
                 <span>Tekanan Darah:</span>
-                <span className="font-medium">120/80 mmHg</span>
+                <span className="font-medium">{latestCheckIn ? `${latestCheckIn.biometrics.sbp}/${latestCheckIn.biometrics.dbp} mmHg` : '120/80 mmHg'}</span>
               </div>
               <div className="flex justify-between text-sm">
                 <span>Denyut Nadi:</span>
-                <span className="font-medium">72 bpm</span>
+                <span className="font-medium">{latestCheckIn ? `${latestCheckIn.biometrics.bpm} bpm` : '72 bpm'}</span>
               </div>
               <div className="text-xs text-muted-foreground">Check-in hari ini, 08:30</div>
             </CardContent>
@@ -201,7 +218,7 @@ export default function Dashboard() {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <div className="text-2xl font-bold">36.8°C</div>
+              <div className="text-2xl font-bold">{latestCheckIn ? `${latestCheckIn.biometrics.temp}°C` : '36.8°C'}</div>
               <div className="text-xs text-muted-foreground">Normal</div>
               <div className="text-xs text-muted-foreground">Check-in hari ini, 08:30</div>
             </CardContent>
